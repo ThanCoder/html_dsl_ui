@@ -3,6 +3,6 @@
 /// More dartdocs go here.
 library;
 
-export 'src/core/base.dart';
+export 'src/core/engine/base.dart';
 
 // TODO: Export any libraries intended for clients of this package.
