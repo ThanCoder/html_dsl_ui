@@ -8,12 +8,14 @@ class Html5Layout {
   final Style? globalStyle;
   final bool manify;
   final void Function(String generatedCss)? onGenereatedCss;
+  final void Function(String generatedJs)? onGenereatedJs;
   const Html5Layout(
     this.child, {
     this.title,
     this.globalStyle,
     this.manify = false,
     this.onGenereatedCss,
+    this.onGenereatedJs,
   });
 
   String get _getAllCss {
@@ -28,6 +30,21 @@ class Html5Layout {
     }
     if (onGenereatedCss != null) {
       onGenereatedCss?.call(buff.toString());
+      return '';
+    }
+
+    return buff.toString();
+  }
+
+  String get _getAllJs {
+    final buff = StringBuffer();
+    final jsCodeContent = HtmlUiEngine.generateJsOnly();
+
+    if (jsCodeContent.isNotEmpty) {
+      buff.writeln(jsCodeContent);
+    }
+    if (onGenereatedJs != null) {
+      onGenereatedJs?.call(buff.toString());
       return '';
     }
 
@@ -49,6 +66,8 @@ class Html5Layout {
 </head>
 <body>
     $html
+
+    ${_getAllJs.isNotEmpty ? '<script>$_getAllJs</script>' : ''}
 </body>
 </html>
 ''';

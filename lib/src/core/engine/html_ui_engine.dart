@@ -1,4 +1,5 @@
 import 'package:html_dsl_ui/html_dsl_ui.dart';
+import 'package:html_dsl_ui/src/core/js/script.dart';
 import 'package:html_dsl_ui/src/core/styles/style.dart';
 
 class _IdGenerator {
@@ -14,36 +15,27 @@ class _IdGenerator {
 }
 
 class HtmlUiEngine {
-  // HTML5 Void Elements စာရင်း
-  static const _voidElements = {
-    'area',
-    'base',
-    'br',
-    'col',
-    'embed',
-    'hr',
-    'img',
-    'input',
-    'link',
-    'meta',
-    'param',
-    'source',
-    'track',
-    'wbr',
-  };
-
   static final Set<Style> _styleRegistry = {};
+  static final Set<Script> _scriptRegistry = {};
 
   static String render(Widget widget) {
     if (widget is TextWidget) {
       return widget.text;
     } else if (widget is StatelessWidget) {
       return render(widget.build());
-    } else if (widget is HtmlWidget) {
+    }
+    // html element widget
+    else if (widget is HtmlWidget) {
       final attributes = {...?widget.attributes};
       final children = [...?widget.children];
+      if (widget.id != null) {
+        attributes['id'] = widget.id!;
+      }
+      if (widget.className != null) {
+        attributes['class'] = widget.className!;
+      }
 
-      // style
+      // Style Processing
       if (widget.style != null) {
         if (widget.style!.selector == null) {
           attributes['dsl-ui-id'] = _IdGenerator.genNumber.toString();
@@ -51,12 +43,26 @@ class HtmlUiEngine {
         }
         _styleRegistry.add(widget.style!);
       }
+      // Script Processing
+      if (widget.script != null) {
+        // Element မှာ ID မရှိသေးရင် Auto ID တပ်ပေးမယ်
+        if (!attributes.containsKey('dsl-ev-id')) {
+          attributes['dsl-ev-id'] = _IdGenerator.genNumber.toString();
+        }
+        widget.script!.setTargetId("[dsl-ev-id='${attributes['dsl-ev-id']}']");
+        widget.script!.setElementVarName('element_${attributes['dsl-ev-id']}');
+        _scriptRegistry.add(widget.script!);
+      }
 
+      // attributes
       final attrs = attributes.entries
           .map((e) => ' ${e.key}="${e.value}"')
           .join('');
+      // html result
       final result = children.map((e) => render(e)).join('');
-      if (_voidElements.contains(widget.tag.toLowerCase())) {
+
+      // single tag or multi tag
+      if (widget.selfClosingTag) {
         return '<${widget.tag}$attrs/>';
       }
       return '<${widget.tag}$attrs>$result</${widget.tag}>';
@@ -70,8 +76,16 @@ class HtmlUiEngine {
     return _styleRegistry.map((s) => s.render()).join("\n");
   }
 
+  // JS သီးသန့် ထုတ်ယူခြင်း (For script.js file သို့မဟုတ် <script> tag ထဲထည့်ရန်)
+  static String generateJsOnly() {
+    // JS Code တွေကို IIFE (Immediately Invoked Function Expression) နဲ့
+    // အုပ်ပေးတာက Variable Scope မထပ်အောင် ကာကွယ်ပေးပါတယ်
+    return _scriptRegistry.map((s) => s.render()).join("\n\n");
+  }
+
   String toHtml(Widget widget) {
     _styleRegistry.clear();
+    _scriptRegistry.clear();
     _IdGenerator.clear();
     return HtmlUiEngine.render(widget);
   }

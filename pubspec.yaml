@@ -1,5 +1,5 @@
 name: html_dsl_ui
-description: A starting point for Dart libraries or applications.
+description: A lightweight Dart DSL for building dynamic HTML interfaces with integrated JavaScript event handling and Fetch API support.
 version: 0.1.0
 repository: https://github.com/ThanCoder/html_dsl_ui.git
 
